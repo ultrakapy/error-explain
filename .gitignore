@@ -1,82 +1,105 @@
 # ==============================================================================
-# Standard C++ Git Ignore (Linux Focused + Cross-Platform Friendly)
+# Git Ignore: Idiomatic for Go projects
 # ==============================================================================
 
-# === Compiled Objects and Libraries ===
-*.o
-*.obj
-*.so
-*.so.*
-*.a
-*.la
-*.lai
-*.dylib
-*.dll
-
-# === Executables ===
+# -----------------------
+# Build artifacts / binaries
+# -----------------------
+# Binaries for programs and plugins
 *.exe
-*.out
-*.app
-# Ignore generic Linux binaries (if they have no extension, name them specifically)
-# /my_project_bin
+*.dll
+*.so
+*.dylib
 
-# === Build Directories ===
-# Using leading slashes to ensure we only ignore root-level build folders
-/[Bb]uild/
-/out/
-/bin/
-cmake-build-*/
-.cache/
+# Test binary produced by `go test -c`
+*.test
 
-# === CMake Generated Files ===
-CMakeCache.txt
-CMakeFiles/
-CMakeScripts/
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-Makefile
-_deps/
-# Local presets that shouldn't be shared
-CMakeUserPresets.json
+# Generic build output directories (common)
+ /bin/
+ /out/
+ /build/
+ /dist/
+ /_build/
 
-# === Package Managers ===
-# Conan
-conan/
-conan.lock
-# Vcpkg
-vcpkg_installed/
-vcpkg_scripts/
+# When using `go install` in module mode, binaries can land in ./bin
+bin/
 
-# === IDE and Text Editor Files ===
-# VS Code
+# -----------------------
+# Go package objects & caches
+# -----------------------
+# Compiled package objects (often used in GOPATH-style projects)
+pkg/
+
+# Go tool cache (usually outside repo, but ignore local caches if created)
+.gocache/
+
+# Coverage and profiling outputs
+coverage.out
+*.coverprofile
+
+# -----------------------
+# Dependency / vendoring
+# -----------------------
+# Vendor directory is usually committed. Uncomment the next line if you vendor but do NOT commit vendor/
+# /vendor/
+
+# Godep / legacy vendor managers
+Godeps/
+Godeps.json
+
+# -----------------------
+# Generated files
+# -----------------------
+# Common folders for generated sources (adjust to your generator)
+gen/
+generated/
+bindata.go
+
+# -----------------------
+# Editor & IDE
+# -----------------------
+# VS Code - ignore all but allow recommended workspace files
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# JetBrains (CLion/PyCharm)
+# JetBrains (Goland / Intellij)
 .idea/
 
-# General
+# General editor temp files
 *.swp
 *~
-.DS_Store
 .history/
 
-# === Debug, Profiling, and Testing ===
-*.gch
-*.pch
-*.pdb
-*.dwo
-gmon.out
-.stackdump
-*.gcda
-*.gcno
-*.gcov
+# -----------------------
+# OS files and misc
+# -----------------------
+.DS_Store
+Thumbs.db
 
-# === Documentation ===
-/html/
-/latex/
-doxygen_objdb_*.tmp
+# Logs
+*.log
+
+# -----------------------
+# C/C++ / build-system leftovers from original (safe to keep)
+# -----------------------
+*.o
+*.obj
+*.a
+*.la
+*.lai
+
+# -----------------------
+# Important: do NOT ignore these files (track them in git)
+# -----------------------
+# - go.mod and go.sum should normally be committed for reproducible builds.
+# - go.work (if used) is usually committed for multi-module repos.
+# (Don't add them to .gitignore)
+
+# -----------------------
+# Helpful notes
+# -----------------------
+# - If you intentionally commit /vendor/, leave it tracked; otherwise uncomment the vendor line above.
+# - If your project uses other generated assets or tool-specific folders, add them here (e.g. delv, protoc outputs, etc.).
