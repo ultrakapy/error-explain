@@ -64,7 +64,7 @@ error-explain --mode teacher -- cargo build
 error-explain --mode deep -- g++ -std=c++20 complex_templates.cpp
 ```
 
-⚙️ Configuration
+⚙️ Configuration [NOTE: This feature is not available yet. It's coming soon..]
 
 You can configure defaults in `~/.config/error-explain/config.toml` (optional):
 
