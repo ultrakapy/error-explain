@@ -23,7 +23,7 @@ Unlike AI coding agents that try to take over your workflow, error-explain respe
 **From Source (Go)**
 
 ```bash
-go install github.com/yourusername/error-explain/cmd/error-explain@latest
+go install github.com/ultrakapy/error-explain/cmd/error-explain@latest
 ```
 
 **Setup API Keys**
