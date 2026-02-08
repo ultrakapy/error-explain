@@ -5,7 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
+	// Import internal packages
+	errorContext "github.com/ultrakapy/error-explain/internal/context" 
 	"github.com/ultrakapy/error-explain/internal/provider"
 	"github.com/ultrakapy/error-explain/internal/runner"
 )
@@ -20,19 +23,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 1. Run the Compiler
+	// 1. Run the Compiler (The "Sidecar")
 	result, err := runner.Run(commandArgs)
 	if err != nil && result.ExitCode == 0 {
 		fmt.Printf("❌ System Error: %v\n", err)
 		os.Exit(1)
 	}
 
+	// 2. If Compiler Failed, Trigger the Voice
 	if result.ExitCode != 0 {
-		// 2. Initialize the AI Brain (The Failover Chain)
-		// In a real app, you'd load these from a config file.
+		fmt.Printf("\n--- 🤖 [AI Thinking...] ---\n")
+
+		// A. Mine the Code Context (Sprint 3)
+		// We pass the raw stderr to the miner.
+		sourceContext := errorContext.Mine(result.Stderr)
+
+		// B. Combine Raw Error + Source Code
+		// The prompt now has "Eyes"
+		fullPrompt := fmt.Sprintf("Compiler Output:\n%s\n\n%s", result.Stderr, sourceContext)
+		
+		// C. Initialize the Brain (Sprint 2)
 		brain := &provider.MultiProvider{
 			Chain: []provider.Provider{
-				// First Priority: Groq (Fastest)
+				// First Priority: Groq (Free Tier, Fastest)
 				&provider.OpenAICompatibleProvider{
 					APIName: "Groq",
 					BaseURL: "https://api.groq.com/openai/v1",
@@ -48,19 +61,18 @@ func main() {
 			},
 		}
 
-		// 3. Ask for Help
-		fmt.Printf("\n--- 🤖 [AI Thinking...] ---\n")
-		
+		// D. Ask the AI
 		sysPrompt := getSystemPrompt(*mode)
-		
-		// Use a background context or one with a timeout
-		ctx := context.Background()
-		explanation, err := brain.Explain(ctx, sysPrompt, result.Stderr)
-		
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		explanation, err := brain.Explain(ctx, sysPrompt, fullPrompt)
 		if err != nil {
 			fmt.Printf("❌ AI Failed: %v\n", err)
 		} else {
 			fmt.Println(explanation)
+			// For debugging:
+			//fmt.Printf("FULL PROMPT:\n%s\n", fullPrompt)
 		}
 	}
 
