@@ -7,6 +7,9 @@ import (
 	"os"
 	"time"
 
+	// Glamour for markdown rendering
+	"github.com/charmbracelet/glamour"
+
 	// Import internal packages
 	errorContext "github.com/ultrakapy/error-explain/internal/context" 
 	"github.com/ultrakapy/error-explain/internal/provider"
@@ -70,7 +73,7 @@ func main() {
 		if err != nil {
 			fmt.Printf("❌ AI Failed: %v\n", err)
 		} else {
-			fmt.Println(explanation)
+			prettyPrint(explanation);
 			// For debugging:
 			//fmt.Printf("FULL PROMPT:\n%s\n", fullPrompt)
 		}
@@ -79,13 +82,41 @@ func main() {
 	os.Exit(result.ExitCode)
 }
 
+// prettyPrint renders markdown with Glamour
+func prettyPrint(markdown string) {
+	// Create a glamour renderer with auto-detected terminal styling
+	r, err := glamour.NewTermRenderer(
+		// Use "dark" or "light" style, or glamour.WithAutoStyle() for auto-detection
+		glamour.WithAutoStyle(),
+		// Wrap text at 100 characters for better readability
+		glamour.WithWordWrap(100),
+	)
+	
+	if err != nil {
+		// Fallback to plain text if glamour fails
+		fmt.Println(markdown)
+		return
+	}
+	
+	// Render the markdown
+	out, err := r.Render(markdown)
+	if err != nil {
+		// Fallback to plain text if rendering fails
+		fmt.Println(markdown)
+		return
+	}
+	
+	// Print the beautifully formatted output
+	fmt.Print(out)
+}
+
 func getSystemPrompt(mode string) string {
 	switch mode {
 	case "deep":
-		return "You are an expert in this area. Explain the root cause of this error in technical detail."
+		return "You are an expert in this area. Explain the root cause of this error in technical detail. Use markdown formatting with headers, bold text, code blocks, and lists."
 	case "teacher":
-		return "You are a Mentor. Explain this error simply and teach the concept behind it."
+		return "You are a Mentor. Explain this error simply and teach the concept behind it. Use markdown formatting with headers, bold text, code blocks, and lists to make it easy to follow."
 	default: // direct
-		return "You are a Build Tool. Fix this error in 1-2 sentences. No fluff."
+		return "You are a Build Tool. Fix this error in 1-2 sentences. No fluff. Use markdown code formatting for any code snippets."
 	}
 }
