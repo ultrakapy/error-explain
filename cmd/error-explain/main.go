@@ -82,7 +82,7 @@ func main() {
 func getSystemPrompt(mode string) string {
 	switch mode {
 	case "deep":
-		return "You are a C++ Expert. Explain the root cause of this error in technical detail."
+		return "You are an expert in this area. Explain the root cause of this error in technical detail."
 	case "teacher":
 		return "You are a Mentor. Explain this error simply and teach the concept behind it."
 	default: // direct
