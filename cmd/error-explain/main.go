@@ -67,6 +67,27 @@ func main() {
 					APIKey:  os.Getenv("OPENAI_API_KEY"),
 					Model:   "gpt-4o-mini",
 				},
+				// DeepSeek
+				&provider.OpenAICompatibleProvider{
+					APIName: "DeepSeek",
+					BaseURL: "https://api.deepseek.com/v1",
+					APIKey:  os.Getenv("DEEPSEEK_API_KEY"),
+					Model:   "deepseek-chat",
+				},
+				// Together.ai
+				&provider.OpenAICompatibleProvider{
+					APIName: "Together",
+					BaseURL: "https://api.together.xyz/v1",
+					APIKey:  os.Getenv("TOGETHER_API_KEY"),
+					Model:   "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+				},
+				// Claude via OpenRouter
+				&provider.OpenAICompatibleProvider{
+					APIName: "Claude-via-OpenRouter",
+					BaseURL: "https://openrouter.ai/api/v1",
+					APIKey:  os.Getenv("OPENROUTER_API_KEY"),
+					Model:   "anthropic/claude-3-haiku",
+				},
 			},
 		}
 
