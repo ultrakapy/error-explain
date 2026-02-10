@@ -48,19 +48,26 @@ func main() {
 		// C. Initialize the Brain (Sprint 2)
 		brain := &provider.MultiProvider{
 			Chain: []provider.Provider{
-				// First Priority: Groq (Free Tier: Ultra-fast, Llama 3)
+				// 1. Groq (Free Tier: Ultra-fast, Llama 3)
 				&provider.OpenAICompatibleProvider{
 					APIName: "Groq",
 					BaseURL: "https://api.groq.com/openai/v1",
 					APIKey:  os.Getenv("GROQ_API_KEY"),
 					Model:   "llama-3.3-70b-versatile",
 				},
-				// Second Priority: Gemini (Free Tier: Gemini 2.5 Flash)
+				// 2. Gemini (Free Tier: Gemini 2.5 Flash)
 				&provider.GeminiProvider{
 					APIKey: os.Getenv("GEMINI_API_KEY"),
 					Model: "gemini-2.5-flash",
 				},
-				// Third Priority: OpenAI (GPT-4o Mini)
+				// 3. Claude (Smartest Logic - Paid API)
+				&provider.AnthropicProvider{
+					APIName: "Anthropic",
+					APIKey: os.Getenv("ANTHROPIC_API_KEY"),
+					Model:  "claude-3-5-sonnet-20240620",
+					// or claude-3-haiku-20240307 for speed
+				},
+				// 4. OpenAI (GPT-4o Mini)
 				&provider.OpenAICompatibleProvider{
 					APIName: "OpenAI",
 					BaseURL: "https://api.openai.com/v1",
@@ -93,7 +100,7 @@ func main() {
 
 		// D. Ask the AI
 		sysPrompt := getSystemPrompt(*mode)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
 		explanation, err := brain.Explain(ctx, sysPrompt, fullPrompt)
