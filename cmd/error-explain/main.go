@@ -48,18 +48,24 @@ func main() {
 		// C. Initialize the Brain (Sprint 2)
 		brain := &provider.MultiProvider{
 			Chain: []provider.Provider{
-				// First Priority: Groq (Free Tier, Fastest)
+				// First Priority: Groq (Free Tier: Ultra-fast, Llama 3)
 				&provider.OpenAICompatibleProvider{
 					APIName: "Groq",
 					BaseURL: "https://api.groq.com/openai/v1",
 					APIKey:  os.Getenv("GROQ_API_KEY"),
 					Model:   "llama-3.3-70b-versatile",
 				},
-				// Fallback: Gemini (Free Tier)
+				// Second Priority: Gemini (Free Tier: Gemini 2.5 Flash)
 				&provider.GeminiProvider{
 					APIKey: os.Getenv("GEMINI_API_KEY"),
-					//Model:  "gemini-2.0-flash-lite",
-					Model: "gemini-3-flash-preview",
+					Model: "gemini-2.5-flash",
+				},
+				// Third Priority: OpenAI (GPT-4o Mini)
+				&provider.OpenAICompatibleProvider{
+					APIName: "OpenAI",
+					BaseURL: "https://api.openai.com/v1",
+					APIKey:  os.Getenv("OPENAI_API_KEY"),
+					Model:   "gpt-4o-mini",
 				},
 			},
 		}
