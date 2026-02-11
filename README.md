@@ -10,7 +10,7 @@ Unlike AI coding agents that try to take over your workflow, error-explain respe
 - ⚡ **Zero Latency:** Your build runs at native speed. The AI analysis happens in a background thread and never blocks your terminal.
 - 🧠 **Context-Aware:** Reads the source code around the error (the "Context Miner") so the AI sees exactly what you wrote, not just the error message.
 - 🛡️ **Skeptic-First Design:** By default, you see the raw compiler error first. The AI adds a "second opinion" below it.
-- 💸 **Free-Tier Friendly:** Built-in "Failover Chain" supports Groq, Gemini Flash, and OpenAI. If one API is rate-limited, it automatically switches to the next.
+- 💸 **Free-Tier Friendly:** Built-in "Failover Chain" supports Groq, Gemini, Anthropic and OpenAI. If one API is rate-limited, it automatically switches to the next. Groq and Gemini currently offer free tier whereas Anthropic and OpenAI require payment.
 
 ## 🎓 Multi-Mode:
 
@@ -66,7 +66,7 @@ error-explain --mode deep -- g++ -std=c++20 complex_templates.cpp
 
 ## ⚙️ Configuration
 
-Error-Explain works out-of-the-box with zero configuration, using a built-in fallback chain (Groq -> Gemini). 
+Error-Explain works out-of-the-box with zero configuration, using a built-in fallback chain (Groq -> Gemini -> Anthropic -> OpenAI).
 
 However, you can fully customize the provider chain, use your own models (including local LLMs like Ollama), and manage API keys via a configuration file.
 
