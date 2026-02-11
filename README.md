@@ -5,28 +5,28 @@ error-explain is a zero-latency "sidecar" for your compiler. It sits alongside `
 
 Unlike AI coding agents that try to take over your workflow, error-explain respects it. It streams your compiler's raw output instantly and only chimes in when things go wrong.
 
-🚀 Features
+## 🚀 Features
 
 - ⚡ **Zero Latency:** Your build runs at native speed. The AI analysis happens in a background thread and never blocks your terminal.
 - 🧠 **Context-Aware:** Reads the source code around the error (the "Context Miner") so the AI sees exactly what you wrote, not just the error message.
 - 🛡️ **Skeptic-First Design:** By default, you see the raw compiler error first. The AI adds a "second opinion" below it.
 - 💸 **Free-Tier Friendly:** Built-in "Failover Chain" supports Groq, Gemini Flash, and OpenAI. If one API is rate-limited, it automatically switches to the next.
 
-🎓 Multi-Mode:
+## 🎓 Multi-Mode:
 
 - **Direct:** "Fix the semicolon." (1 sentence)
 - **Deep:** "Here is how the vtable was corrupted." (Technical deep dive)
 - **Teacher:** "This is called SFINAE. Here is why it exists." (Educational)
 
-📦 Installation
+## 📦 Installation
 
-**From Source (Go)**
+### From Source (Go)
 
 ```bash
 go install github.com/ultrakapy/error-explain/cmd/error-explain@latest
 ```
 
-**Setup API Keys**
+### Setup API Keys
 
 error-explain is model-agnostic. You need at least one API key. We recommend Groq for speed or Gemini for the best free tier.
 
@@ -41,17 +41,17 @@ export GEMINI_API_KEY="AIza..."
 export OPENAI_API_KEY="sk-..."
 ```
 
-🛠 Usage
+## 🛠 Usage
 
 Simply verify your build command with `error-explain --`.
 
-**Basic Usage:**
+### Basic Usage:
 
 ```bash
 error-explain -- g++ main.cpp
 ```
 
-**Select a Voice Mode:**
+### Select a Voice Mode:
 
 ```bash
 # Just the fix (Default)
@@ -64,21 +64,59 @@ error-explain --mode teacher -- cargo build
 error-explain --mode deep -- g++ -std=c++20 complex_templates.cpp
 ```
 
-⚙️ Configuration [NOTE: This feature is not available yet. It's coming soon..]
+## ⚙️ Configuration
 
-You can configure defaults in `~/.config/error-explain/config.toml` (optional):
+Error-Explain works out-of-the-box with zero configuration, using a built-in fallback chain (Groq -> Gemini). 
 
-```toml
-[voice]
-default_mode = "direct"  # direct, deep, teacher
-timeout = "10s"
+However, you can fully customize the provider chain, use your own models (including local LLMs like Ollama), and manage API keys via a configuration file.
 
-[ai]
-# The tool tries these in order until one succeeds
-chain = ["groq", "gemini", "openai"]
+### Config File Location
+The tool looks for a file named `config` (e.g., `config.yaml`, `config.json`, or `config.toml`) in your operating system's standard configuration directory:
+
+| OS | Config Path |
+| :--- | :--- |
+| **Linux** | `~/.config/error-explain/config.yaml` |
+| **macOS** | `~/Library/Application Support/error-explain/config.yaml` |
+| **Windows** | `%AppData%\error-explain\config.yaml` |
+
+### Configuration Structure
+You can define a list of providers. The tool will try them **in order**. If one fails (rate limit, network error), it automatically moves to the next.
+
+**Example `config.yaml`:**
+
+```yaml
+providers:
+  # 1. First priority: Local Ollama (Free, Private)
+  - name: "Local Llama3"
+    type: "openai"
+    model: "llama3"
+    base_url: "http://localhost:11434/v1"
+    api_key_env: "OLLAMA_API_KEY" # Optional for Ollama
+
+  # 2. Second priority: Claude 3.5 Sonnet (Best Reasoning)
+  - name: "Claude 3.5"
+    type: "anthropic"
+    model: "claude-3-5-sonnet-20240620"
+    api_key_env: "ANTHROPIC_API_KEY"
+
+  # 3. Fallback: Groq (Ultra Fast)
+  - name: "Groq"
+    type: "openai"
+    model: "llama-3.3-70b-versatile"
+    base_url: "https://api.groq.com/openai/v1"
+    api_key_env: "GROQ_API_KEY"
 ```
 
-🏗 Architecture
+### Supported Provider Types
+
+| Type | Description | Required Fields |
+| :--- | :--- | :--- |
+| `openai` | Any OpenAI-compatible API (OpenAI, Groq, DeepSeek, Ollama, vLLM) | `model`, `api_key_env`, `base_url` |
+| `anthropic` | Anthropic's Claude models | `model`, `api_key_env` |
+| `gemini` | Google's Gemini models | `model`, `api_key_env` |
+
+
+## 🏗 Architecture
 
 error-explain is built in Go to be a single, lightweight binary.
 
@@ -86,7 +124,7 @@ error-explain is built in Go to be a single, lightweight binary.
 - **The Context Miner:** If an error is detected, the miner parses the file:line location and reads a ±5 line window from your source code.
 - **The Failover Brain:** It attempts to call the fastest AI provider first. If it hits a rate limit (429), it silently switches to the next provider in the chain.
 
-🤝 Contributing
+## 🤝 Contributing
 
 This tool is designed to be Compiler Agnostic. Currently, the "Context Miner" is optimized for GCC/Clang formats.
 
@@ -96,6 +134,6 @@ We welcome PRs for:
 - Java (javac) support.
 - Python traceback parsing.
 
-📜 License
+## 📜 License
 
 MIT License. Built for the community.

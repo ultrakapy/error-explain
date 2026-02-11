@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/glamour"
 
 	// Import internal packages
+	"github.com/ultrakapy/error-explain/internal/config"
 	errorContext "github.com/ultrakapy/error-explain/internal/context" 
 	"github.com/ultrakapy/error-explain/internal/provider"
 	"github.com/ultrakapy/error-explain/internal/runner"
@@ -26,93 +27,75 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 1. Run the Compiler (The "Sidecar")
+	// 1. Run the Compiler
 	result, err := runner.Run(commandArgs)
 	if err != nil && result.ExitCode == 0 {
 		fmt.Printf("❌ System Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 2. If Compiler Failed, Trigger the Voice
 	if result.ExitCode != 0 {
 		fmt.Printf("\n--- 🤖 [AI Thinking...] ---\n")
 
-		// A. Mine the Code Context (Sprint 3)
-		// We pass the raw stderr to the miner.
-		sourceContext := errorContext.Mine(result.Stderr)
-
-		// B. Combine Raw Error + Source Code
-		// The prompt now has "Eyes"
-		fullPrompt := fmt.Sprintf("Compiler Output:\n%s\n\n%s", result.Stderr, sourceContext)
-		
-		// C. Initialize the Brain (Sprint 2)
-		brain := &provider.MultiProvider{
-			Chain: []provider.Provider{
-				// 1. Groq (Free Tier: Ultra-fast, Llama 3)
-				&provider.OpenAICompatibleProvider{
-					APIName: "Groq",
-					BaseURL: "https://api.groq.com/openai/v1",
-					APIKey:  os.Getenv("GROQ_API_KEY"),
-					Model:   "llama-3.3-70b-versatile",
-				},
-				// 2. Gemini (Free Tier: Gemini 2.5 Flash)
-				&provider.GeminiProvider{
-					APIKey: os.Getenv("GEMINI_API_KEY"),
-					Model: "gemini-2.5-flash",
-				},
-				// 3. Claude (Smartest Logic - Paid API)
-				&provider.AnthropicProvider{
-					APIName: "Anthropic",
-					APIKey: os.Getenv("ANTHROPIC_API_KEY"),
-					Model:  "claude-3-5-sonnet-20240620",
-					// or claude-3-haiku-20240307 for speed
-				},
-				// 4. OpenAI (GPT-4o Mini)
-				&provider.OpenAICompatibleProvider{
-					APIName: "OpenAI",
-					BaseURL: "https://api.openai.com/v1",
-					APIKey:  os.Getenv("OPENAI_API_KEY"),
-					Model:   "gpt-4o-mini",
-				},
-				// DeepSeek
-				&provider.OpenAICompatibleProvider{
-					APIName: "DeepSeek",
-					BaseURL: "https://api.deepseek.com/v1",
-					APIKey:  os.Getenv("DEEPSEEK_API_KEY"),
-					Model:   "deepseek-chat",
-				},
-				// Together.ai
-				&provider.OpenAICompatibleProvider{
-					APIName: "Together",
-					BaseURL: "https://api.together.xyz/v1",
-					APIKey:  os.Getenv("TOGETHER_API_KEY"),
-					Model:   "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
-				},
-				// Claude via OpenRouter
-				&provider.OpenAICompatibleProvider{
-					APIName: "Claude-via-OpenRouter",
-					BaseURL: "https://openrouter.ai/api/v1",
-					APIKey:  os.Getenv("OPENROUTER_API_KEY"),
-					Model:   "anthropic/claude-3-haiku",
-				},
-			},
+		// Load Configuration
+		cfg, err := config.Load()
+		if err != nil {
+			fmt.Printf("⚠️ Config Warning: %v\nUsing defaults...\n", err)
 		}
 
-		// D. Ask the AI
+		// Build the Chain from Config
+		var chain []provider.Provider
+		for _, pCfg := range cfg.Providers {
+			apiKey := os.Getenv(pCfg.APIKeyEnv)
+			// Skip if API key is missing (optional safety check)
+			if apiKey == "" {
+				continue 
+			}
+
+			switch pCfg.Type {
+			case "anthropic":
+				chain = append(chain, &provider.AnthropicProvider{
+					APIName: pCfg.Name,
+					APIKey:  apiKey,
+					Model:   pCfg.Model,
+				})
+			case "gemini":
+				chain = append(chain, &provider.GeminiProvider{
+					APIKey: apiKey,
+					Model:  pCfg.Model,
+				})
+			case "openai":
+				chain = append(chain, &provider.OpenAICompatibleProvider{
+					APIName: pCfg.Name,
+					BaseURL: pCfg.BaseURL,
+					APIKey:  apiKey,
+					Model:   pCfg.Model,
+				})
+			}
+		}
+
+		if len(chain) == 0 {
+			fmt.Println("❌ Error: No valid providers found. Check your API keys.")
+			os.Exit(1)
+		}
+
+		brain := &provider.MultiProvider{Chain: chain}
+
+		// Mine Context & Execute
+		sourceContext := errorContext.Mine(result.Stderr)
+		fullPrompt := fmt.Sprintf("Compiler Output:\n%s\n\n%s", result.Stderr, sourceContext)
+		
 		sysPrompt := getSystemPrompt(*mode)
-		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		explanation, err := brain.Explain(ctx, sysPrompt, fullPrompt)
 		if err != nil {
 			fmt.Printf("❌ AI Failed: %v\n", err)
 		} else {
-			prettyPrint(explanation);
-			// For debugging:
-			//fmt.Printf("FULL PROMPT:\n%s\n", fullPrompt)
+			prettyPrint(explanation)
 		}
 	}
-
 	os.Exit(result.ExitCode)
 }
 
