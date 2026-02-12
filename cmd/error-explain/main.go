@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"strings"
 
 	// Glamour for markdown rendering
 	"github.com/charmbracelet/glamour"
@@ -17,8 +18,23 @@ import (
 	"github.com/ultrakapy/error-explain/internal/runner"
 )
 
+// Custom flag type to handle multiple occurrences (e.g., --extra-context file1 --extra-context "string2").
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return "my string representation"
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+var extraContextFlags arrayFlags
+
 func main() {
 	mode := flag.String("mode", "direct", "AI Persona: direct, deep, or teacher")
+	flag.Var(&extraContextFlags, "extra-context", "Add file path or raw text to the prompt (can be used multiple times)")
 	flag.Parse()
 	commandArgs := flag.Args()
 
@@ -83,7 +99,14 @@ func main() {
 
 		// Mine Context & Execute
 		sourceContext := errorContext.Mine(result.Stderr)
-		fullPrompt := fmt.Sprintf("Compiler Output:\n%s\n\n%s", result.Stderr, sourceContext)
+		extraContext := processExtraContext(extraContextFlags)
+
+		fullPrompt := fmt.Sprintf(
+			"Compiler Output:\n%s\n\nSource Code Context:\n%s%s",
+			result.Stderr, 
+			sourceContext,
+			extraContext,
+		)
 		
 		sysPrompt := getSystemPrompt(*mode)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -94,6 +117,8 @@ func main() {
 			fmt.Printf("❌ AI Failed: %v\n", err)
 		} else {
 			prettyPrint(explanation)
+			// Debugging output:
+			//fmt.Printf("DEBUGGING: %s\n", fullPrompt);
 		}
 	}
 	os.Exit(result.ExitCode)
@@ -127,13 +152,46 @@ func prettyPrint(markdown string) {
 	fmt.Print(out)
 }
 
+// Helper to process extra context
+func processExtraContext(extras []string) string {
+    if len(extras) == 0 {
+        return ""
+    }
+
+    var sb strings.Builder
+    sb.WriteString("\n\n--- USER PROVIDED EXTRA CONTEXT ---\n")
+
+    for _, item := range extras {
+        // 1. Check if it looks like a file and exists
+        if info, err := os.Stat(item); err == nil && !info.IsDir() {
+            content, err := os.ReadFile(item)
+            if err == nil {
+                sb.WriteString(fmt.Sprintf("\nFile: %s\n```\n%s\n```\n", item, string(content)))
+                continue
+            }
+        }
+
+        // 2. Otherwise, treat as raw text
+        sb.WriteString(fmt.Sprintf("\nNote: %s\n", item))
+    }
+    return sb.String()
+}
+
 func getSystemPrompt(mode string) string {
+	const contextProtocol = `
+If, and only if, the provided context is insufficient to identify the root cause with high confidence:
+1. Provide your best guess.
+2. Explicitly list what extra information is missing (e.g., "I need to see your go.mod").
+3. Advise the user to run this tool again using the '--extra-context' flag to provide that file or information.`
+
 	switch mode {
 	case "deep":
-		return "You are an expert in this area. Explain the root cause of this error in technical detail. Use markdown formatting with headers, bold text, code blocks, and lists."
+		return "You are an expert in this area. Explain the root cause of this error in technical detail. Use markdown formatting with headers, bold text, code blocks, and lists. " + contextProtocol
 	case "teacher":
-		return "You are a Mentor. Explain this error simply and teach the concept behind it. Use markdown formatting with headers, bold text, code blocks, and lists to make it easy to follow."
-	default: // direct
-		return "You are a Build Tool. Fix this error in 1-2 sentences. No fluff. Use markdown code formatting for any code snippets."
+		return "You are a Mentor. Explain this error simply and teach the concept behind it. Use markdown formatting with headers, bold text, code blocks, and lists to make it easy to follow. " + contextProtocol
+	case "direct":
+		fallthrough
+	default:
+		return "You are a Build Tool. Fix this error in 1-2 sentences. No fluff. Use markdown code formatting for any code snippets. " + contextProtocol
 	}
 }
