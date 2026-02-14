@@ -115,6 +115,13 @@ providers:
 | `anthropic` | Anthropic's Claude models | `model`, `api_key_env` |
 | `gemini` | Google's Gemini models | `model`, `api_key_env` |
 
+## 🔐 Privacy Notice
+
+`error-explain` transmits **compiler output**, **nearby source code**, and **extra context** you provide to external LLM services to generate explanations.
+
+- **⚠ Sensitive Data:** This transmission can unintentionally expose proprietary code or credentials.
+- **🔒 Local Mode:** For private repositories, we strongly recommend using a **Local LLM** (like Ollama) via the configuration file to keep data offline.
+- **🛡 Responsibility:** Ensure secrets (API keys, private keys) are redacted before running. By using hosted providers, you accept their data-handling policies. Consult your organization’s security guidelines if working with confidential code.
 
 ## 🏗 Architecture
 
