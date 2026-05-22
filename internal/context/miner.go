@@ -11,7 +11,7 @@ import (
 
 // Standard GCC/Clang error format: "main.cpp:10:5: error: ..."
 // We capture group 1 (file) and group 2 (line)
-var gccPattern = regexp.MustCompile(`^([^:\n]+):(\d+):(\d+):?`)
+var gccPattern = regexp.MustCompile(`^([^:\n]+):(\d+):(\d+):\s*error:`)
 
 // Mine inspects the compiler output and extracts the relevant source code.
 // It creates a formatted block of text ready for the LLM.

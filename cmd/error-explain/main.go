@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 	"strings"
 
@@ -45,9 +46,12 @@ func main() {
 
 	// 1. Run the Compiler
 	result, err := runner.Run(commandArgs)
-	if err != nil && result.ExitCode == 0 {
-		fmt.Printf("❌ System Error: %v\n", err)
-		os.Exit(1)
+	if err != nil {
+		// If it's NOT an ExitError, the command failed to start entirely
+		if _, isExitErr := err.(*exec.ExitError); !isExitErr {
+			fmt.Fprintf(os.Stderr, "❌ System Error: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	if result.ExitCode != 0 {
@@ -162,17 +166,26 @@ func processExtraContext(extras []string) string {
     sb.WriteString("\n\n--- USER PROVIDED EXTRA CONTEXT ---\n")
 
     for _, item := range extras {
-        // 1. Check if it looks like a file and exists
-        if info, err := os.Stat(item); err == nil && !info.IsDir() {
-            content, err := os.ReadFile(item)
-            if err == nil {
+        info, err := os.Stat(item)
+        if err == nil && !info.IsDir() {
+            // It's an existing file, try to read it
+            content, readErr := os.ReadFile(item)
+            if readErr != nil {
+                // File exists but could not be read (e.g., permissions)
+                fmt.Fprintf(os.Stderr, "⚠️ Warning: Could not read extra context file '%s': %v\n", item, readErr)
+                // Do NOT add to AI prompt; it's a user-facing warning.
+            } else {
+                // Successfully read file, add its content to the AI prompt
                 sb.WriteString(fmt.Sprintf("\nFile: %s\n```\n%s\n```\n", item, string(content)))
-                continue
             }
+        } else if err == nil && info.IsDir() {
+            // It's an existing directory
+            fmt.Fprintf(os.Stderr, "⚠️ Warning: '%s' is a directory, not a file. Skipping as extra context.\n", item)
+            // Do NOT add to AI prompt
+        } else {
+            // os.Stat failed (file does not exist, or other stat error), treat as raw text
+            sb.WriteString(fmt.Sprintf("\nNote: %s\n", item))
         }
-
-        // 2. Otherwise, treat as raw text
-        sb.WriteString(fmt.Sprintf("\nNote: %s\n", item))
     }
     return sb.String()
 }
